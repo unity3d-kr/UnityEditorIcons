@@ -5,12 +5,14 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
+using UnityEditor.IMGUI.Controls;
+
 public class EditorIcons : EditorWindow
 {
-    [MenuItem("Tools/Editor Icons %e", priority = -1001)]
+    [MenuItem("Windows/Editor Icons", priority = -1001)]
     public static void EditorIconsOpen()
     {
-        var w = CreateWindow<EditorIcons>("Editor Icons");
+        var w = GetWindow<EditorIcons>("Editor Icons");
         w.ShowUtility();
         w.minSize = new Vector2(320, 450);
     }
@@ -25,38 +27,43 @@ public class EditorIcons : EditorWindow
 
     string search = "";
 
+    SearchField _searchField;
     void SearchGUI()
     {
-        using( new GUILayout.HorizontalScope())
+        using (new GUILayout.HorizontalScope())
         {
-            if (isWide) GUILayout.Space(10);
+            var isWide = Screen.width > 550;
+            if (isWide)
+                GUILayout.Space(10);
 
-            search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField);
-            if ( GUILayout.Button(EditorGUIUtility.IconContent("winbtn_mac_close_h"), //SVN_DeletedLocal
-                EditorStyles.toolbarButton, 
+            //search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField);
+            if (_searchField == null)
+                _searchField = new SearchField();
+            var r = EditorGUILayout.GetControlRect();
+            search = _searchField.OnGUI(r, search);
+
+            if (GUILayout.Button(EditorGUIUtility.IconContent("winbtn_mac_close_h"), //SVN_DeletedLocal
+                EditorStyles.toolbarButton,
                 GUILayout.Width(22))
             ) search = "";
         }
     }
 
-    bool isWide => Screen.width > 550;
 
-    bool doSearch => ! string.IsNullOrWhiteSpace(search) && search != "";
-
-    GUIContent GetIcon( string icon_name )
+    GUIContent GetIcon(string icon_name)
     {
         GUIContent valid = null;
         Debug.unityLogger.logEnabled = false;
         if (!string.IsNullOrEmpty(icon_name)) valid = EditorGUIUtility.IconContent(icon_name);
         Debug.unityLogger.logEnabled = true;
-        return valid?.image == null ? null : valid;
+        return valid != null ? (valid.image == null ? null : valid) : null;
     }
 
     private void OnEnable()
     {
         //InitIcons();
         //var all_icons = iconContentListAll.Select(x => x.tooltip).ToArray();
-        var all_icons = ico_list.Where( x => GetIcon( x ) != null );
+        var all_icons = ico_list.Where(x => GetIcon(x) != null);
         //List<string> found = new List<string>();
         List<string> unique = new List<string>();
         //var skip_flag = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
@@ -69,8 +76,8 @@ public class EditorIcons : EditorWindow
             //if (!EditorUtility.IsPersistent(x)) skipped_not_persistent++;                               // skipped 39 none persistent
             //if (x.hideFlags != HideFlags.HideAndDontSave && x.hideFlags != skip_flag) skipped_flags++;  // skipped 27 icons
 
-            GUIContent icoContent = GetIcon( x.name );
-            if ( icoContent == null ) continue; // skipped 14 icons 
+            GUIContent icoContent = GetIcon(x.name);
+            if (icoContent == null) continue; // skipped 14 icons 
             //{ 
             //    skipped_nulls++; 
             //    continue; 
@@ -81,7 +88,7 @@ public class EditorIcons : EditorWindow
                 //unique_to_resources++;
                 unique.Add(x.name);
             }
-            
+
             //found.Add( x.name );
         }
 
@@ -107,16 +114,19 @@ public class EditorIcons : EditorWindow
 
         InitIcons();
 
-        if (!isWide) SearchGUI();
+        var isWide = Screen.width > 550;
+        if (!isWide)
+            SearchGUI();
 
-        using ( new GUILayout.HorizontalScope( EditorStyles.toolbar ) )
+        using (new GUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            GUILayout.Label("Select what icons to show", GUILayout.Width( 160 ));
+            GUILayout.Label("Select what icons to show", GUILayout.Width(160));
             viewBigIcons = GUILayout.SelectionGrid(
-              viewBigIcons ? 1 : 0, new string[] { "Small", "Big" }, 
-              2 , EditorStyles.toolbarButton) == 1;
+              viewBigIcons ? 1 : 0, new string[] { "Small", "Big" },
+              2, EditorStyles.toolbarButton) == 1;
 
-            if (isWide) SearchGUI();
+            if (isWide)
+                SearchGUI();
         }
 
         if (isWide) GUILayout.Space(3);
@@ -131,44 +141,46 @@ public class EditorIcons : EditorWindow
 
             // scrollbar_width = ~ 12.5
             var render_width = (Screen.width / ppp - 13f);
-            var gridW = Mathf.FloorToInt( render_width / buttonSize );
-            var margin_left = ( render_width - buttonSize * gridW ) / 2;
+            var gridW = Mathf.FloorToInt(render_width / buttonSize);
+            var margin_left = (render_width - buttonSize * gridW) / 2;
 
             int row = 0, index = 0;
 
             List<GUIContent> iconList;
 
-            if( doSearch ) iconList = iconContentListAll.Where( x => x.tooltip.ToLower()
-                .Contains( search.ToLower() ) ).ToList();
+            var doSearch = !string.IsNullOrEmpty(search) && search != "";
+            if (doSearch)
+                iconList = iconContentListAll.Where(x => x.tooltip.ToLower().Contains(search.ToLower())).ToList();
             else iconList = viewBigIcons ? iconContentListBig : iconContentListSmall;
 
-            while ( index < iconList.Count )
+            while (index < iconList.Count)
             {
-                using( new GUILayout.HorizontalScope() )
+                using (new GUILayout.HorizontalScope())
                 {
                     GUILayout.Space(margin_left);
 
-                    for( var i = 0; i < gridW; ++ i )
+                    for (var i = 0; i < gridW; ++i)
                     {
                         int k = i + row * gridW;
 
-                        var icon = iconList[ k ];
+                        var icon = iconList[k];
 
                         if (GUILayout.Button(icon,
                             iconButtonStyle,
                             GUILayout.Width(buttonSize),
-                            GUILayout.Height(buttonSize))) {
+                            GUILayout.Height(buttonSize)))
+                        {
                             EditorGUI.FocusTextInControl("");
                             iconSelected = icon;
                         }
 
-                        index ++ ;
+                        index++;
 
-                        if( index == iconList.Count ) break;
+                        if (index == iconList.Count) break;
                     }
                 }
 
-                row ++ ;
+                row++;
             }
 
             GUILayout.Space(10);
@@ -176,21 +188,21 @@ public class EditorIcons : EditorWindow
 
 
         if (iconSelected == null) return;
-        
+
         GUILayout.FlexibleSpace();
 
-        using (new GUILayout.HorizontalScope( EditorStyles.helpBox, GUILayout.MaxHeight(viewBigIcons ? 140 : 120 ) ) )
+        using (new GUILayout.HorizontalScope(EditorStyles.helpBox, GUILayout.MaxHeight(viewBigIcons ? 140 : 120)))
         {
-            using( new GUILayout.VerticalScope( GUILayout.Width( 130 ) ) )
+            using (new GUILayout.VerticalScope(GUILayout.Width(130)))
             {
                 GUILayout.Space(2);
 
-                GUILayout.Button(iconSelected, 
-                    darkPreview? iconPreviewBlack:iconPreviewWhite, 
-                    GUILayout.Width(128), GUILayout.Height( viewBigIcons ? 128 : 40 ));
-                
+                GUILayout.Button(iconSelected,
+                    darkPreview ? iconPreviewBlack : iconPreviewWhite,
+                    GUILayout.Width(128), GUILayout.Height(viewBigIcons ? 128 : 40));
+
                 GUILayout.Space(5);
-                
+
                 darkPreview = GUILayout.SelectionGrid(
                   darkPreview ? 1 : 0, new string[] { "Light", "Dark" },
                   2, EditorStyles.miniButton) == 1;
@@ -202,21 +214,21 @@ public class EditorIcons : EditorWindow
 
             using (new GUILayout.VerticalScope())
             {
-                var s = $"Size: {iconSelected.image.width}x{iconSelected.image.height}";
-                s += "\nIs Pro Skin Icon: " + ( iconSelected.tooltip.IndexOf("d_") == 0 ? "Yes" : "No" );
-                s += $"\nTotal {iconContentListAll.Count} icons";
+                string s = "Size: " + iconSelected.image.width + "x" + iconSelected.image.height;
+                s += "\nIs Pro Skin Icon: " + (iconSelected.tooltip.IndexOf("d_") == 0 ? "Yes" : "No");
+                s += "\nTotal " + iconContentListAll.Count + " icons";
                 GUILayout.Space(5);
-                EditorGUILayout.HelpBox(s,MessageType.None);
+                EditorGUILayout.HelpBox(s, MessageType.None);
                 GUILayout.Space(5);
                 EditorGUILayout.TextField("EditorGUIUtility.IconContent(\"" + iconSelected.tooltip + "\")");
                 GUILayout.Space(5);
-                if(GUILayout.Button("Copy to clipboard",EditorStyles.miniButton))
+                if (GUILayout.Button("Copy to clipboard", EditorStyles.miniButton))
                     EditorGUIUtility.systemCopyBuffer = iconSelected.tooltip;
             }
 
             GUILayout.Space(10);
 
-            if (GUILayout.Button( "X", GUILayout.ExpandHeight(true)))
+            if (GUILayout.Button("X", GUILayout.ExpandHeight(true)))
             {
                 iconSelected = null;
             }
@@ -234,15 +246,15 @@ public class EditorIcons : EditorWindow
     static GUIStyle iconPreviewBlack = null;
     static GUIStyle iconPreviewWhite = null;
 
-    void AllTheTEXTURES( ref GUIStyle s, Texture2D t )
+    void AllTheTEXTURES(ref GUIStyle s, Texture2D t)
     {
         s.hover.background = s.onHover.background = s.focused.background = s.onFocused.background = s.active.background = s.onActive.background = s.normal.background = s.onNormal.background = t;
         s.hover.scaledBackgrounds = s.onHover.scaledBackgrounds = s.focused.scaledBackgrounds = s.onFocused.scaledBackgrounds = s.active.scaledBackgrounds = s.onActive.scaledBackgrounds = s.normal.scaledBackgrounds = s.onNormal.scaledBackgrounds = new Texture2D[] { t };
     }
 
-    Texture2D Texture2DPixel( Color c )
+    Texture2D Texture2DPixel(Color c)
     {
-        Texture2D t = new Texture2D(1,1);
+        Texture2D t = new Texture2D(1, 1);
         t.SetPixel(0, 0, c);
         t.Apply();
         return t;
@@ -250,17 +262,17 @@ public class EditorIcons : EditorWindow
 
     void InitIcons()
     {
-        if( iconContentListSmall != null ) return;
+        if (iconContentListSmall != null) return;
 
-        iconButtonStyle = new GUIStyle( EditorStyles.miniButton );
-        iconButtonStyle.margin = new RectOffset(0,0,0,0);
+        iconButtonStyle = new GUIStyle(EditorStyles.miniButton);
+        iconButtonStyle.margin = new RectOffset(0, 0, 0, 0);
         iconButtonStyle.fixedHeight = 0;
 
         iconPreviewBlack = new GUIStyle(iconButtonStyle);
-        AllTheTEXTURES( ref iconPreviewBlack, Texture2DPixel(new Color(0.15f,0.15f,0.15f)));
-        
+        AllTheTEXTURES(ref iconPreviewBlack, Texture2DPixel(new Color(0.15f, 0.15f, 0.15f)));
+
         iconPreviewWhite = new GUIStyle(iconButtonStyle);
-        AllTheTEXTURES( ref iconPreviewWhite, Texture2DPixel(new Color(0.85f, 0.85f, 0.85f)));
+        AllTheTEXTURES(ref iconPreviewWhite, Texture2DPixel(new Color(0.85f, 0.85f, 0.85f)));
 
         iconMissingNames = new List<string>();
         iconContentListSmall = new List<GUIContent>();
@@ -269,9 +281,9 @@ public class EditorIcons : EditorWindow
 
         for (var i = 0; i < ico_list.Length; ++i)
         {
-            GUIContent ico = GetIcon( ico_list[ i ] );
-            
-            if( ico == null )
+            GUIContent ico = GetIcon(ico_list[i]);
+
+            if (ico == null)
             {
                 iconMissingNames.Add(ico_list[i]);
                 continue;
@@ -280,8 +292,8 @@ public class EditorIcons : EditorWindow
             ico.tooltip = ico_list[i];
 
             iconContentListAll.Add(ico);
-            
-            if ( !( ico.image.width <= 36 || ico.image.height <= 36 ) )
+
+            if (!(ico.image.width <= 36 || ico.image.height <= 36))
                 iconContentListBig.Add(ico);
             else iconContentListSmall.Add(ico);
         }
@@ -292,7 +304,7 @@ public class EditorIcons : EditorWindow
 
     #region ICONS
 
-    public static string[] ico_list = 
+    public static string[] ico_list =
     {
         "_Help","_Popup","aboutwindow.mainheader","ageialogo","AlphabeticalSorting","Animation.AddEvent",
         "Animation.AddKeyframe","Animation.EventMarker","Animation.FirstKey","Animation.LastKey",
