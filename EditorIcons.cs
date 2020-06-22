@@ -36,16 +36,17 @@ public class EditorIcons : EditorWindow
             if (isWide)
                 GUILayout.Space(10);
 
-            //search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField);
             if (_searchField == null)
                 _searchField = new SearchField();
             var r = EditorGUILayout.GetControlRect();
+            r.y -= 2;
             search = _searchField.OnGUI(r, search);
 
-            if (GUILayout.Button(EditorGUIUtility.IconContent("winbtn_mac_close_h"), //SVN_DeletedLocal
-                EditorStyles.toolbarButton,
-                GUILayout.Width(22))
-            ) search = "";
+            //search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField);
+            //if (GUILayout.Button(EditorGUIUtility.IconContent("winbtn_mac_close_h"), //SVN_DeletedLocal
+            //    EditorStyles.toolbarButton,
+            //    GUILayout.Width(22))
+            //) search = "";
         }
     }
 
